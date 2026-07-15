@@ -2,9 +2,13 @@ import json
 import os
 import sys
 import unicodedata
+from datetime import datetime, timezone
 from urllib.parse import urljoin
 
 from playwright.sync_api import sync_playwright
+
+STATE_FILE = ".state/last_no_news_notice.txt"
+NO_NEWS_INTERVAL_MINUTES = 30
 
 
 def normalize(text: str) -> str:
@@ -62,6 +66,22 @@ def find_event_link(keywords: list[str], links: list[tuple[str, str]], base_url:
     return None
 
 
+def minutes_since_last_no_news_notice() -> float | None:
+    """Minutos desde el último aviso de 'sin novedad', o None si nunca se mandó uno."""
+    try:
+        with open(STATE_FILE, encoding="utf-8") as f:
+            last = datetime.fromisoformat(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return None
+    return (datetime.now(timezone.utc) - last).total_seconds() / 60
+
+
+def mark_no_news_notice_sent() -> None:
+    os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        f.write(datetime.now(timezone.utc).isoformat())
+
+
 def main():
     with open("config.json", encoding="utf-8") as f:
         config = json.load(f)
@@ -107,8 +127,8 @@ def main():
         print("Telegram enviado." if ok else "FALLO al enviar Telegram.")
     else:
         print("No disponible aún — ninguna keyword encontrada.")
-        # Solo manda mensaje negativo en ejecuciones manuales (no spam cada 5 min)
-        if os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch":
+        elapsed = minutes_since_last_no_news_notice()
+        if elapsed is None or elapsed >= NO_NEWS_INTERVAL_MINUTES:
             msg = (
                 f"❌ <b>Sin novedad</b>\n\n"
                 f"Evento: <b>{event_name}</b>\n"
@@ -116,6 +136,12 @@ def main():
                 f'<a href="{url}">Ver página →</a>'
             )
             send_telegram(token, chat_id, msg)
+            mark_no_news_notice_sent()
+        else:
+            print(
+                f"Aviso de 'sin novedad' pendiente "
+                f"({elapsed:.1f}/{NO_NEWS_INTERVAL_MINUTES} min)."
+            )
 
 
 if __name__ == "__main__":
