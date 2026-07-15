@@ -1,9 +1,7 @@
 name: Ticket Monitor
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'    # Cada 5 minutos
-  workflow_dispatch:           # Ejecución manual desde GitHub Actions UI
+  workflow_dispatch:    # Disparado cada 5 min por el Cloudflare Worker (o manualmente)
 
 jobs:
   check:
@@ -11,6 +9,14 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Restore monitor state
+        uses: actions/cache@v4
+        with:
+          path: .state
+          key: ticket-monitor-state-${{ github.run_id }}
+          restore-keys: |
+            ticket-monitor-state-
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -29,4 +35,3 @@ jobs:
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
