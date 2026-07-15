@@ -8,7 +8,7 @@ from urllib.parse import urljoin
 from playwright.sync_api import sync_playwright
 
 STATE_FILE = ".state/last_no_news_notice.txt"
-NO_NEWS_INTERVAL_MINUTES = 30
+NO_NEWS_INTERVAL_MINUTES = 60
 
 
 def normalize(text: str) -> str:
