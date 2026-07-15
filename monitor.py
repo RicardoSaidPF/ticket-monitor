@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import unicodedata
+from urllib.parse import urljoin
 
 from playwright.sync_api import sync_playwright
 
@@ -30,8 +31,8 @@ def send_telegram(token: str, chat_id: str, message: str) -> bool:
         return False
 
 
-def scrape_page(url: str) -> str:
-    """Abre la URL con Playwright y devuelve el texto visible de la página."""
+def scrape_page(url: str) -> tuple[str, list[tuple[str, str]]]:
+    """Abre la URL con Playwright y devuelve (texto visible, [(texto_link, href), ...])."""
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(
@@ -43,8 +44,22 @@ def scrape_page(url: str) -> str:
         )
         page.goto(url, wait_until="networkidle", timeout=30_000)
         text = page.inner_text("body")
+        links = page.eval_on_selector_all(
+            "a[href]",
+            "els => els.map(el => [el.innerText, el.getAttribute('href')])",
+        )
         browser.close()
-        return text
+        return text, [(t, h) for t, h in links if h]
+
+
+def find_event_link(keywords: list[str], links: list[tuple[str, str]], base_url: str) -> str | None:
+    """Busca, entre los links de la página, uno cuyo texto contenga alguna keyword."""
+    for link_text, href in links:
+        link_normalized = normalize(link_text)
+        for kw in keywords:
+            if normalize(kw) in link_normalized:
+                return urljoin(base_url, href)
+    return None
 
 
 def main():
@@ -66,7 +81,7 @@ def main():
     print(f"URL: {url}")
 
     try:
-        page_text = scrape_page(url)
+        page_text, links = scrape_page(url)
     except Exception as e:
         print(f"Error al cargar la página: {e}")
         sys.exit(1)
@@ -80,11 +95,12 @@ def main():
 
     if matched:
         matched_str = "\n".join(f"  • {kw}" for kw in matched)
+        buy_url = find_event_link(matched, links, url) or url
         msg = (
             f"🎟 <b>BOLETOS DISPONIBLES!</b>\n\n"
             f"Evento: <b>{event_name}</b>\n\n"
             f"Detectado:\n{matched_str}\n\n"
-            f'<a href="{url}">Comprar ahora →</a>'
+            f'<a href="{buy_url}">Comprar ahora →</a>'
         )
         ok = send_telegram(token, chat_id, msg)
         print(f"ENCONTRADO — keywords: {matched}")
