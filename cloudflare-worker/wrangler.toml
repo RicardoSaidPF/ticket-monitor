@@ -1,4 +1,4 @@
-name = "ticket-monitor-trigger"
+name = "ticket-monitor"
 main = "src/index.js"
 compatibility_date = "2026-07-15"
 
