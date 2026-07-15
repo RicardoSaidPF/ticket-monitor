@@ -1,0 +1,18 @@
+name = "ticket-monitor-trigger"
+main = "src/index.js"
+compatibility_date = "2026-07-15"
+
+# Dispara cada 5 minutos con la precisión del scheduler de Cloudflare
+# (a diferencia del `schedule:` nativo de GitHub Actions, que puede
+# retrasarse minutos u horas sin aviso).
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+GITHUB_OWNER = "RicardoSaidPF"
+GITHUB_REPO = "ticket-monitor"
+GITHUB_WORKFLOW_FILE = "ticket-monitor.yml"
+GITHUB_REF = "main"
+
+# GITHUB_TOKEN NO va aquí — se configura como secret con:
+#   wrangler secret put GITHUB_TOKEN
