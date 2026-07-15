@@ -91,6 +91,15 @@ def main():
         print("Telegram enviado." if ok else "FALLO al enviar Telegram.")
     else:
         print("No disponible aún — ninguna keyword encontrada.")
+        # Solo manda mensaje negativo en ejecuciones manuales (no spam cada 5 min)
+        if os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch":
+            msg = (
+                f"❌ <b>Sin novedad</b>\n\n"
+                f"Evento: <b>{event_name}</b>\n"
+                f"Boletos aún no disponibles.\n\n"
+                f'<a href="{url}">Ver página →</a>'
+            )
+            send_telegram(token, chat_id, msg)
 
 
 if __name__ == "__main__":

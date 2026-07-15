@@ -2,7 +2,7 @@ name: Ticket Monitor
 
 on:
   schedule:
-    - cron: '*/10 * * * *'   # Cada 10 minutos
+    - cron: '*/5 * * * *'    # Cada 5 minutos
   workflow_dispatch:           # Ejecución manual desde GitHub Actions UI
 
 jobs:
@@ -29,3 +29,4 @@ jobs:
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
