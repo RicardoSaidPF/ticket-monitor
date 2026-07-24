@@ -1,7 +1,8 @@
 name: Ticket Monitor
 
-on:
-  workflow_dispatch:    # Disparado cada 5 min por el Cloudflare Worker (o manualmente)
+# PAUSADO: sin triggers, este workflow no se ejecuta ni manual ni
+# automáticamente. Para reactivarlo, vuelve a agregar `workflow_dispatch:`.
+on: {}
 
 jobs:
   check:
